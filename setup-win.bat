@@ -8,14 +8,51 @@ echo.
 REM Check if conda is installed
 where conda >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] Conda is not installed or not in PATH.
+    echo [INFO] Conda is not installed. Downloading and installing Miniconda...
     echo.
-    echo Please install Anaconda or Miniconda first:
-    echo   - Anaconda: https://www.anaconda.com/download
-    echo   - Miniconda: https://docs.conda.io/en/latest/miniconda.html
+
+    REM Download Miniconda installer
+    set MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+    set INSTALLER=miniconda_installer.exe
+
+    echo [INFO] Downloading Miniconda from %MINICONDA_URL% ...
+    powershell -Command "Invoke-WebRequest -Uri '%MINICONDA_URL%' -OutFile '%INSTALLER%'"
+
+    if not exist %INSTALLER% (
+        echo [ERROR] Failed to download Miniconda installer.
+        echo.
+        echo Please install manually from: https://docs.conda.io/en/latest/miniconda.html
+        pause
+        exit /b 1
+    )
+
+    echo [INFO] Installing Miniconda silently...
+    start /wait "" %INSTALLER% /InstallationType=JustMe /AddToPath=1 /RegisterPython=0 /S /D=%UserProfile%\Miniconda3
+
+    if %errorlevel% neq 0 (
+        echo [ERROR] Miniconda installation failed.
+        del %INSTALLER% 2>nul
+        pause
+        exit /b 1
+    )
+
+    echo [INFO] Cleaning up installer...
+    del %INSTALLER%
+
+    echo [INFO] Miniconda installed. Refreshing environment...
+    set "PATH=%UserProfile%\Miniconda3;%UserProfile%\Miniconda3\Scripts;%UserProfile%\Miniconda3\Library\bin;%PATH%"
+
+    REM Verify conda is now available
+    where conda >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo [ERROR] Conda installation verification failed.
+        echo Please close this window and run the script again.
+        pause
+        exit /b 1
+    )
+
+    echo [SUCCESS] Miniconda installed successfully!
     echo.
-    pause
-    exit /b 1
 )
 
 echo [INFO] Found Conda installation
